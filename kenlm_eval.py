@@ -1,6 +1,7 @@
 from subprocess import run
 from os import listdir
 import kenlm
+import lm_eval as lme
 
 klmbin_path = "home/daniel/kenlm/build/bin/"
 data_path = "data/"
@@ -26,6 +27,4 @@ for n_order in orders:
 
     # Evaluate model
     model = kenlm.LanguageModel(output_path + bin_fname)
-    with open(data_path + train_fname) as scoring_file:
-        text = scoring_file.read()
-        print(model.score(text))
+    print(lme.perplexity(data_path + train_fname, model.score))
