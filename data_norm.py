@@ -1,18 +1,20 @@
 from collections import Counter, OrderedDict
 import numpy as np
 
+FILES_PATH = "i_data/"
+
 # Read base embeddings
 emb_fname = "glove42B300d.txt"
 print("Loading embeddings...")
 embeddings = OrderedDict()
-with open("i_data/" + emb_fname) as file:
+with open(FILES_PATH + emb_fname) as file:
     for line in file:
         idx = line.find(" ")
         word = line[:idx]
         embedding = line[idx+1:].strip()
         embeddings[word] = embedding
 
-def missing_embeddings(filename):
+def missing_embeddings(filename, embeddings):
     missing_counter = Counter()
 
     with open(filename) as file:
@@ -59,15 +61,15 @@ def normalize_file(filename, outfname):
                     else:
                         normalized += " |UNK|"
             normalized += " \n"
-    with open(outfname, "w") as file:
+    with open(outfname, "w") as file:s
         file.write(normalized)
 
 # Normalize all files and update embeddings for compound words
 for fname in ["train.txt", "valid.txt", "test.txt"]:
-    missing_embeddings("i_data/" + fname)
-    print("Normalizing file...")
-    normalize_file("i_data/" + fname, "i_data/n_" + fname)
-    for m in missing_embeddings("i_data/n_" + fname).most_common():
+    missing_embeddings(FILES_PATH + fname, embeddings)
+    print("Normalizing", fname)
+    normalize_file(FILES_PATH + fname, FILES_PATH + "n_" + fname)
+    for m in missing_embeddings(FILES_PATH + "n_" + fname, embeddings).most_common():
         print(m)
 
 # Finally, take the average of all embeddings
@@ -88,11 +90,11 @@ new_embedding += "{:.5f}".format(unk_embedding[-1])
 embeddings["|UNK|"] = new_embedding
 
 for fname in ["n_train.txt", "n_valid.txt", "n_test.txt"]:
-    missing_embeddings("i_data/" + fname)
+    missing_embeddings(FILES_PATH + fname, embeddings)
 
 # Save final word embeddings
 print("Saving word embeddings...")
-with open("i_data/n_" + emb_fname, "w") as file:
+with open(FILES_PATH + "n_" + emb_fname, "w") as file:
     for k in embeddings:
         file.write(k + " " + embeddings[k] + "\n")
-print("New embeddings saved at i_data/n_" + emb_fname)
+print("New embeddings saved at " + FILES_PATH + "n_" + emb_fname)

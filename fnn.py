@@ -42,9 +42,9 @@ learning_rate = 0.01
 
 
 # read in data
-train = read_dataset('../data/train.txt')
-valid = read_dataset('../data/valid.txt')
-dev = read_dataset('../data/test.txt')
+train = read_dataset('data/train.txt')
+valid = read_dataset('data/valid.txt')
+dev = read_dataset('data/test.txt')
 voc_size = len(embeddings)
 embeddings_keys = list(embeddings.keys())
 
