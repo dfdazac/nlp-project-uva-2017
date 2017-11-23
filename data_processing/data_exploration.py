@@ -3,7 +3,7 @@ import numpy as np
 
 # Read all words available in the word embeddings file
 embeddings = {}
-with open("i_data/glove42B300d.txt") as file:
+with open("../i_data/glove42B300d.txt") as file:
     for line in file:
         idx = line.find(" ")
         word = line[:idx]

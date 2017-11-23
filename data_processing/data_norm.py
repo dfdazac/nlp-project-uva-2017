@@ -1,7 +1,7 @@
 from collections import Counter, OrderedDict
 import numpy as np
 
-FILES_PATH = "i_data/"
+FILES_PATH = "../i_data/"
 
 def missing_embeddings(filename, embeddings):
     missing_counter = Counter()

@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 train_fname = "train.txt"
 valid_fname = "valid.txt"
 # The relative path containing the training and validation corpora
-data_path = "data/"
+data_path = "../data/"
 # The path where arpa and binary files will be saved
-output_path = "i_data/"
+output_path = "../i_data/"
 # Path to KenLM binaries
 klmbin_path = "/home/daniel/kenlm/build/bin/"
 
