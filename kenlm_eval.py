@@ -36,8 +36,8 @@ for i, n_order in enumerate(orders):
 
     # Evaluate model on training and validation sets
     model = kenlm.LanguageModel(output_path + bin_fname)
-    train_perplexities[i] = lme.perplexity(data_path + train_fname, model.score)
-    valid_perplexities[i] = lme.perplexity(data_path + valid_fname, model.score)
+    train_perplexities[i] = lme.perplexity(data_path + train_fname, model.score, base=10)
+    valid_perplexities[i] = lme.perplexity(data_path + valid_fname, model.score, base=10)
 
 # Show bar plots with perplexities
 bar_width = 0.35

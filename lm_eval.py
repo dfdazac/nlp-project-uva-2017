@@ -1,10 +1,11 @@
-def perplexity(corpusfname, scoringfcn):
+def perplexity(corpusfname, scoringfcn, base=10):
     """ Evaluates the perplexity of a language model
     on a given corpus.
     Args:
         - corpusfname (str): the corpus file name
         - scoringfcn (function): it should take a sentence (str).
-                      as an argument and return its log-10 probability (float).
+                      as an argument and return its log-base probability (float).
+        - base (int): the base of the log-probability returned by the model
     Returns:
         - float: the perplexity of the model on the corpus.
     """
@@ -14,4 +15,4 @@ def perplexity(corpusfname, scoringfcn):
         for line in corpus:            
             log_p_sum += scoringfcn(line)
             n_words += len(line.split())
-    return 10 ** (-1/n_words * log_p_sum)
+    return base ** (-1/n_words * log_p_sum)
