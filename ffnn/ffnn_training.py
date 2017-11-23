@@ -81,7 +81,9 @@ if CUDA:
     model.cuda()
 
 # Train!
-for epoch in range(0):
+EPOCHS = 10
+print("Epoch\tLoss")
+for epoch in range(EPOCHS):
     for sentence in train_data:
         # Clear gradients
         model.zero_grad()
@@ -101,6 +103,6 @@ for epoch in range(0):
         sentence_loss.backward()
         optimizer.step()
 
-    print("{:d} - {:.2f}".format(epoch+1, sentence_loss.data[0]))
+    print("{:d}/{:d} - {:.2f}".format(epoch+1, EPOCHS, sentence_loss.data[0]))
 
 torch.save(model.state_dict(), "ffnn_model.pt")
