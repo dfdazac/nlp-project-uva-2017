@@ -5,6 +5,8 @@ import torch.optim as optim
 import torch.autograd as autograd
 from collections import defaultdict
 
+CUDA = torch.cuda.is_available()
+
 class FFNeuralModel(nn.Module):
     """ A Neural Language Model based on Bengio (2003)
     Args:
@@ -75,6 +77,9 @@ loss_function = nn.NLLLoss()
 model = FFNeuralModel(vocab_size, 60, context_size, 50)
 optimizer = optim.SGD(model.parameters(), lr=0.001)
 
+if CUDA:
+    model.cuda()
+
 # Train!
 for epoch in range(0):
     for sentence in train_data:
@@ -82,6 +87,8 @@ for epoch in range(0):
         model.zero_grad()
 
         sentence_loss = autograd.Variable(torch.FloatTensor([0]))
+        if CUDA:
+            sentence_loss = sentence_loss.cuda()
 
         for history, target in next_ngram_sample(sentence, context_size):
             # Forward propagate to get n-gram log-probabilities
