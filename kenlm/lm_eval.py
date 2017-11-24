@@ -1,6 +1,6 @@
 def perplexity(corpusfname, scoringfcn, base=10):
     """ Evaluates the perplexity of a language model
-    on a given corpus.
+    on a given corpus. Assumes there is one sentence per line.
     Args:
         - corpusfname (str): the corpus file name
         - scoringfcn (function): it should take a sentence (str).
@@ -12,7 +12,9 @@ def perplexity(corpusfname, scoringfcn, base=10):
     n_words = 0
     log_p_sum = 0
     with open(corpusfname) as corpus:        
-        for line in corpus:            
+        for line in corpus:       
             log_p_sum += scoringfcn(line)
-            n_words += len(line.split())
-    return base ** (-1/n_words * log_p_sum)
+            # Add 1 for the end of sentence symbol
+            n_words += len(line.split()) + 1
+    
+    return base ** (-log_p_sum/n_words)

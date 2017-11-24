@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Training and validation corpora
-train_fname = "train.txt"
-valid_fname = "valid.txt"
+train_fname = "train.txt.UNK"
+valid_fname = "valid.txt.UNK"
 # The relative path containing the training and validation corpora
 data_path = "../data/"
 # The path where arpa and binary files will be saved
@@ -44,9 +44,7 @@ bar_width = 0.35
 index = np.arange(len(orders))
 plt.grid(zorder=0)
 plt.bar(index, train_perplexities, bar_width, label="Training", zorder=3)
-plt.plot(index, train_perplexities, "--ok", linewidth=1, zorder=4)
 plt.bar(index + bar_width, valid_perplexities, bar_width, label="Validation", zorder=3)
-plt.plot(index + bar_width, valid_perplexities, "--ok", linewidth=1, zorder=4)
 plt.xticks(index + bar_width/2, orders)
 plt.xlabel("N-gram order")
 plt.title("Perplexity")

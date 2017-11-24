@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.autograd as autograd
 from collections import defaultdict
+import pickle
 
 CUDA = torch.cuda.is_available()
 
@@ -26,7 +27,7 @@ class FFNeuralModel(nn.Module):
         """ Calculates the log-probabilities for all words
         given the inputs.
         Args:
-            - inputs (tensor): (N, context_size)
+            - inputs (tensor): (N, context_size), a tensor containing word indices
         Returns:
             - tensor: (N, vocab_size), the log-probabilities
         """
@@ -53,12 +54,15 @@ if __name__ == '__main__':
             for line in corpus:
                 yield [word_to_idx[word] for word in line.strip().split()]
 
-    training_file = "../data/train.txt"
+    training_file = "../data/train_toy.txt"
     train_data = list(read_corpus(training_file))
 
-    word_to_idx = defaultdict(lambda: UNK, word_to_idx)
+    word_to_idx = dict(word_to_idx)
     idx_to_word = {i: word for word, i in word_to_idx.items()}
     vocab_size = len(word_to_idx)
+
+    pickle.dump(word_to_idx, open("word_to_idx.p", "wb"))
+    pickle.dump(word_to_idx, open("idx_to_word.p", "wb"))
 
     def next_ngram_sample(sentence, context_size):
         # Start with a history of sentence delimiters
@@ -82,7 +86,7 @@ if __name__ == '__main__':
         model.cuda()
 
     # Train!
-    EPOCHS = 10
+    EPOCHS = 20
     print("Epoch\tLoss")
     for epoch in range(EPOCHS):
         for sentence in train_data:
