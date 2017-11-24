@@ -17,3 +17,4 @@ def read_embeddings(emb_fname):
             embedding = line[idx+1:].strip()
             embeddings[word] = embedding
     return embeddings
+    

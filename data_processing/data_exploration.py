@@ -58,5 +58,3 @@ def separate_words(filename, outfname):
     output = open(outfname, "w")
     output.write(result)
     output.close()
-
-

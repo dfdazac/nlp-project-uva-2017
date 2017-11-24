@@ -38,71 +38,72 @@ class FFNeuralModel(nn.Module):
         log_probs = F.log_softmax(y)
         return log_probs
 
-# Load training data
-word_to_idx = defaultdict(lambda: len(word_to_idx))
-S = word_to_idx["<s>"]
-UNK = word_to_idx["<unk>"]
-def read_corpus(corpusfname):
-    """ A generator that yields a list of word indices for each sentence
-    in the corpus. Assumes there's one sentence per line.
-    Args:
-        - corpusfname (string): file name of the corpus to read
-    """
-    with open(corpusfname) as corpus:
-        for line in corpus:
-            yield [word_to_idx[word] for word in line.strip().split()]
+if __name__ == '__main__':
+    # Load training data
+    word_to_idx = defaultdict(lambda: len(word_to_idx))
+    S = word_to_idx["<s>"]
+    UNK = word_to_idx["<unk>"]
+    def read_corpus(corpusfname):
+        """ A generator that yields a list of word indices for each sentence
+        in the corpus. Assumes there's one sentence per line.
+        Args:
+            - corpusfname (string): file name of the corpus to read
+        """
+        with open(corpusfname) as corpus:
+            for line in corpus:
+                yield [word_to_idx[word] for word in line.strip().split()]
 
-training_file = "../data/train.txt"
-train_data = list(read_corpus(training_file))
+    training_file = "../data/train.txt"
+    train_data = list(read_corpus(training_file))
 
-word_to_idx = defaultdict(lambda: UNK, word_to_idx)
-idx_to_word = {i: word for word, i in word_to_idx.items()}
-vocab_size = len(word_to_idx)
+    word_to_idx = defaultdict(lambda: UNK, word_to_idx)
+    idx_to_word = {i: word for word, i in word_to_idx.items()}
+    vocab_size = len(word_to_idx)
 
-def next_ngram_sample(sentence, context_size):
-    # Start with a history of sentence delimiters
-    history = [S] * context_size
-    # Add a sentence delimiter at the end
-    delim_sentence = sentence + [S]
-    # Move a window of the size of the context and yield history, target
-    for i in range(len(delim_sentence)):
-        target = delim_sentence[i]
-        yield history, target
-        history = history[1:] + [target]
+    def next_ngram_sample(sentence, context_size):
+        # Start with a history of sentence delimiters
+        history = [S] * context_size
+        # Add a sentence delimiter at the end
+        delim_sentence = sentence + [S]
+        # Move a window of the size of the context and yield history, target
+        for i in range(len(delim_sentence)):
+            target = delim_sentence[i]
+            yield history, target
+            history = history[1:] + [target]
 
-# Since the neural model outputs log-probabilities,
-# we use the negative log-likelihood loss
-context_size = 5
-loss_function = nn.NLLLoss()
-model = FFNeuralModel(vocab_size, 60, context_size, 50)
-optimizer = optim.SGD(model.parameters(), lr=0.001)
+    # Since the neural model outputs log-probabilities,
+    # we use the negative log-likelihood loss
+    context_size = 5
+    loss_function = nn.NLLLoss()
+    model = FFNeuralModel(vocab_size, 60, context_size, 50)
+    optimizer = optim.SGD(model.parameters(), lr=0.001)
 
-if CUDA:
-    model.cuda()
+    if CUDA:
+        model.cuda()
 
-# Train!
-EPOCHS = 10
-print("Epoch\tLoss")
-for epoch in range(EPOCHS):
-    for sentence in train_data:
-        # Clear gradients
-        model.zero_grad()
+    # Train!
+    EPOCHS = 10
+    print("Epoch\tLoss")
+    for epoch in range(EPOCHS):
+        for sentence in train_data:
+            # Clear gradients
+            model.zero_grad()
 
-        sentence_loss = autograd.Variable(torch.FloatTensor([0]))
-        if CUDA:
-            sentence_loss = sentence_loss.cuda()
+            sentence_loss = autograd.Variable(torch.FloatTensor([0]))
+            if CUDA:
+                sentence_loss = sentence_loss.cuda()
 
-        for history, target in next_ngram_sample(sentence, context_size):
-            # Forward propagate to get n-gram log-probabilities
-            log_probs = model(autograd.Variable(torch.LongTensor(history)))            
-            
-            # Accumulate the loss for the obtained log-probability
-            sentence_loss += loss_function(log_probs, autograd.Variable(torch.LongTensor([target])))
+            for history, target in next_ngram_sample(sentence, context_size):
+                # Forward propagate to get n-gram log-probabilities
+                log_probs = model(autograd.Variable(torch.LongTensor(history)))            
+                
+                # Accumulate the loss for the obtained log-probability
+                sentence_loss += loss_function(log_probs, autograd.Variable(torch.LongTensor([target])))
 
-        # Backward propagate and optimize the parameters
-        sentence_loss.backward()
-        optimizer.step()
+            # Backward propagate and optimize the parameters
+            sentence_loss.backward()
+            optimizer.step()
 
-    print("{:d}/{:d} - {:.2f}".format(epoch+1, EPOCHS, sentence_loss.data[0]))
+        print("{:d}/{:d} - {:.2f}".format(epoch+1, EPOCHS, sentence_loss.data[0]))
 
-torch.save(model.state_dict(), "ffnn_model.pt")
+    torch.save(model.state_dict(), "ffnn_model.pt")
