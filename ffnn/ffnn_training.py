@@ -54,7 +54,7 @@ if __name__ == '__main__':
             for line in corpus:
                 yield [word_to_idx[word] for word in line.strip().split()]
 
-    training_file = "../data/train_toy.txt"
+    training_file = "../data/train.txt"
     train_data = list(read_corpus(training_file))
 
     word_to_idx = dict(word_to_idx)

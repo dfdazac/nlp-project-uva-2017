@@ -37,4 +37,4 @@ model = FFNeuralModel(vocab_size=len(word_to_idx),
 model.load_state_dict(torch.load("ffnn_model.pt",
     map_location=lambda storage, loc:storage))
 
-print(lme.perplexity("../data/train_toy.txt", sentence_prob, base=np.e))
+print("Perplexity:", lme.perplexity("../data/train.txt", sentence_prob, base=np.e))
