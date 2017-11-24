@@ -61,6 +61,7 @@ if __name__ == '__main__':
     idx_to_word = {i: word for word, i in word_to_idx.items()}
     vocab_size = len(word_to_idx)
 
+    # The word dictionaries are saved for later use
     pickle.dump(word_to_idx, open("word_to_idx.p", "wb"))
     pickle.dump(word_to_idx, open("idx_to_word.p", "wb"))
 
@@ -93,16 +94,14 @@ if __name__ == '__main__':
             # Clear gradients
             model.zero_grad()
 
-            sentence_loss = autograd.Variable(torch.FloatTensor([0]))
-            if CUDA:
-                sentence_loss = sentence_loss.cuda()
+            sentence_loss = autograd.Variable(torch.cuda.FloatTensor([0])) if CUDA else autograd.Variable(torch.FloatTensor([0]))
 
             for history, target in next_ngram_sample(sentence, context_size):
                 # Forward propagate to get n-gram log-probabilities
-                log_probs = model(autograd.Variable(torch.LongTensor(history)))            
+                log_probs = model(autograd.Variable(torch.cuda.LongTensor(history))) if CUDA else model(autograd.Variable(torch.LongTensor(history)))
                 
                 # Accumulate the loss for the obtained log-probability
-                sentence_loss += loss_function(log_probs, autograd.Variable(torch.LongTensor([target])))
+                sentence_loss += loss_function(log_probs, autograd.Variable(torch.cuda.LongTensor([target]))) if CUDA else loss_function(log_probs, autograd.Variable(torch.LongTensor([target])))
 
             # Backward propagate and optimize the parameters
             sentence_loss.backward()
