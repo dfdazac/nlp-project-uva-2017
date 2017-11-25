@@ -81,32 +81,34 @@ if __name__ == '__main__':
     context_size = 5
     loss_function = nn.NLLLoss()
     model = FFNeuralModel(vocab_size, 60, context_size, 50)
-    optimizer = optim.SGD(model.parameters(), lr=0.001)
-
     if CUDA:
         model.cuda()
 
-    # Train!
-    EPOCHS = 20
-    print("Epoch\tLoss")
-    for epoch in range(EPOCHS):
-        for sentence in train_data:
-            # Clear gradients
-            model.zero_grad()
+    optimizer = optim.Adam(model.parameters())
 
-            sentence_loss = autograd.Variable(torch.cuda.FloatTensor([0])) if CUDA else autograd.Variable(torch.FloatTensor([0]))
+    try:
+        # Train!
+        EPOCHS = 20
+        print("Epoch\tLoss")
+        for epoch in range(EPOCHS):
+            for sentence in train_data:
+                # Clear gradients
+                model.zero_grad()
 
-            for history, target in next_ngram_sample(sentence, context_size):
-                # Forward propagate to get n-gram log-probabilities
-                log_probs = model(autograd.Variable(torch.cuda.LongTensor(history))) if CUDA else model(autograd.Variable(torch.LongTensor(history)))
-                
-                # Accumulate the loss for the obtained log-probability
-                sentence_loss += loss_function(log_probs, autograd.Variable(torch.cuda.LongTensor([target]))) if CUDA else loss_function(log_probs, autograd.Variable(torch.LongTensor([target])))
+                sentence_loss = autograd.Variable(torch.cuda.FloatTensor([0])) if CUDA else autograd.Variable(torch.FloatTensor([0]))
 
-            # Backward propagate and optimize the parameters
-            sentence_loss.backward()
-            optimizer.step()
+                for history, target in next_ngram_sample(sentence, context_size):
+                    # Forward propagate to get n-gram log-probabilities
+                    log_probs = model(autograd.Variable(torch.cuda.LongTensor(history))) if CUDA else model(autograd.Variable(torch.LongTensor(history)))
+                    
+                    # Accumulate the loss for the obtained log-probability
+                    sentence_loss += loss_function(log_probs, autograd.Variable(torch.cuda.LongTensor([target]))) if CUDA else loss_function(log_probs, autograd.Variable(torch.LongTensor([target])))
 
-        print("{:d}/{:d} - {:.2f}".format(epoch+1, EPOCHS, sentence_loss.data[0]))
+                # Backward propagate and optimize the parameters
+                sentence_loss.backward()
+                optimizer.step()
 
-    torch.save(model.state_dict(), "ffnn_model.pt")
+            print("{:d}/{:d} - {:.2f}".format(epoch+1, EPOCHS, sentence_loss.data[0]))
+
+    finally:
+        torch.save(model.state_dict(), "ffnn_model.pt")
