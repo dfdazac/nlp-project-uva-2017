@@ -144,6 +144,6 @@ if __name__ == '__main__':
                 # Evaluate loss
                 valid_loss = loss_function(log_probs, get_variable_tensor(targets))
 
-            print("{:2d}/{:2d}:  {:^8.2f}{:^8.2f}".format(epoch+1, EPOCHS, train_loss.data[0], valid_loss.data[0]))
+            print("{:2d}/{:2d}:  {:^8.2f}{:^8.2f}".format(epoch+1, epochs, train_loss.data[0], valid_loss.data[0]))
     finally:
         torch.save(model, "ffnn_model.pt")
