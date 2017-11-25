@@ -6,16 +6,34 @@ import torch.autograd as autograd
 from ffnn import FFNeuralModel
 
 CUDA = torch.cuda.is_available()
+EOS_SYMBOL = "<s>"
+UNK_SYMBOL = "<unk>"
 
-def read_corpus(corpusfname, word_to_idx):
+def read_corpus_data(corpusfname):
     """ A generator that yields a list of word indices for each sentence
     in the corpus. Assumes there's one sentence per line.
     Args:
         - corpusfname (string): file name of the corpus to read
     """
+    word_to_idx = defaultdict(lambda: len(word_to_idx))
+    S = word_to_idx[EOS_SYMBOL]
+    UNK = word_to_idx[UNK_SYMBOL]
+
+    sentences = []
+
     with open(corpusfname) as corpus:
         for line in corpus:
-            yield [word_to_idx[word] for word in line.strip().split()]
+            sentences.append([word_to_idx[word] for word in line.strip().split()])
+
+    word_to_idx = dict(word_to_idx)
+    return sentences, word_to_idx
+
+def get_corpus_indices(corpusfname, word_to_idx):
+    sentences = []
+    with open(corpusfname) as corpus:
+        for line in corpus:
+            sentences.append([word_to_idx.get(word, word_to_idx["<unk>"]) for word in line.strip().split()])
+    return sentences
 
 def next_ngram_sample(sentence, context_size, S):
     """ Generates tuples (history, target) from a window
@@ -84,13 +102,11 @@ def next_batch(data, context_size, batch_size, S):
 
 
 if __name__ == '__main__':
-    # Load training data
-    word_to_idx = defaultdict(lambda: len(word_to_idx))
-    S = word_to_idx["<s>"]
-    UNK = word_to_idx["<unk>"]
+    # Load training data    
     training_file = "../data/train.txt"
-    train_data = list(read_corpus(training_file, word_to_idx))
-    word_to_idx = dict(word_to_idx)
+    validation_file = "../data/valid.txt"
+    train_data, word_to_idx = read_corpus_data(training_file)
+    valid_data, _ = read_corpus_data(validation_file)
     
     # Setup model
     emb_dimensions = 60
@@ -102,27 +118,32 @@ if __name__ == '__main__':
 
     loss_function = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters())
-    batch_size = 20
+    batch_size = 30
+    epochs = 20
 
     try:
-        # Train!
-        EPOCHS = 20
-        print("Epoch\tLoss")
-        for epoch in range(EPOCHS):
-            for histories, targets in next_batch(train_data, context_size, batch_size, S):
-                # Clear gradients
-                model.zero_grad()
+        # Train!        
+        print("{:6s}  {:^16s}".format("", "Loss"))
+        print("{:6s}  {:^8s}{:^8s}".format("Epoch", "Train", "Validation"))
+        for epoch in range(epochs):
 
-                loss = get_variable_tensor([0], dtype="float")                
-                log_probs = model(get_variable_tensor(histories))
-                    
-                # Accumulate the loss for the obtained log-probability
-                loss = loss_function(log_probs, get_variable_tensor(targets))
-
+            for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
+                # Predict
+                log_probs = model(get_variable_tensor(histories))                    
+                # Evaluate loss
+                train_loss = loss_function(log_probs, get_variable_tensor(targets))
                 # Backward propagate and optimize the parameters
-                loss.backward()
+                model.zero_grad()
+                train_loss.backward()
                 optimizer.step()
 
-            print("{:d}/{:d} - {:.2f}".format(epoch+1, EPOCHS, loss.data[0]))
+            # Evaluate on validation set
+            for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):                
+                # Predict
+                log_probs = model(get_variable_tensor(histories))                    
+                # Evaluate loss
+                valid_loss = loss_function(log_probs, get_variable_tensor(targets))
+
+            print("{:2d}/{:2d}:  {:^8.2f}{:^8.2f}".format(epoch+1, EPOCHS, train_loss.data[0], valid_loss.data[0]))
     finally:
         torch.save(model, "ffnn_model.pt")

@@ -31,7 +31,7 @@ class FFNeuralModel(nn.Module):
         Returns:
             - tensor: (N, vocab_size), the log-probabilities
         """
-        # Get the embeddings for the inputs and reshape to row
+        # Get the embeddings for the inputs and reshape to N rows
         embeddings = self.embeddings(inputs).view(len(inputs), -1)        
         # Forward propagate
         h = F.tanh(self.linear1(embeddings))

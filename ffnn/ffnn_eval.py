@@ -1,7 +1,6 @@
 import torch
 import torch.autograd as autograd
 from ffnn import FFNeuralModel
-import pickle
 import lm_eval as lme
 import numpy as np
 from ffnn_train import next_ngram_sample
