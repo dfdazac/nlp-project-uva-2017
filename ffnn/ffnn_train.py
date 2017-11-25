@@ -126,24 +126,30 @@ if __name__ == '__main__':
         print("{:6s}  {:^16s}".format("", "Loss"))
         print("{:6s}  {:^8s}{:^8s}".format("Epoch", "Train", "Validation"))
         for epoch in range(epochs):
+            batch_train_loss = get_variable_tensor([0], dtype="float")
+            batch_valid_loss = get_variable_tensor([0], dtype="float")
 
             for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
                 # Predict
-                log_probs = model(get_variable_tensor(histories))                    
+                log_probs = model(get_variable_tensor(histories))
+
                 # Evaluate loss
-                train_loss = loss_function(log_probs, get_variable_tensor(targets))
+                train_loss = loss_function(log_probs, get_variable_tensor(targets))                
                 # Backward propagate and optimize the parameters
                 model.zero_grad()
                 train_loss.backward()
                 optimizer.step()
+
+                # Save loss
+                batch_train_loss += train_loss
 
             # Evaluate on validation set
             for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):                
                 # Predict
                 log_probs = model(get_variable_tensor(histories))                    
                 # Evaluate loss
-                valid_loss = loss_function(log_probs, get_variable_tensor(targets))
+                batch_valid_loss += loss_function(log_probs, get_variable_tensor(targets))
 
-            print("{:2d}/{:2d}:  {:^8.2f}{:^8.2f}".format(epoch+1, epochs, train_loss.data[0], valid_loss.data[0]))
+            print("{:2d}/{:2d}:  {:^8.2f}{:^8.2f}".format(epoch+1, epochs, batch_train_loss.data[0], batch_valid_loss.data[0]))
     finally:
         torch.save(model, "ffnn_model.pt")
