@@ -106,30 +106,21 @@ def next_batch(data, context_size, batch_size, S):
                     targets.append(sentence[j + context_size])
             yield histories, targets
 
-
-if __name__ == '__main__':
-    # Load training data    
-    training_file = "../data/train.txt"
-    validation_file = "../data/valid.txt"
-    train_data, word_to_idx = read_corpus_data(training_file)
-    valid_data = get_corpus_indices(validation_file, word_to_idx)
-    
+def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_hidden):
     # Setup model
-    emb_dimensions = 60
-    context_size = 4
-    n_hidden = 50
     model = FFNeuralModel(emb_dimensions, context_size, n_hidden, word_to_idx)
     if CUDA:
         model.cuda()
-
+    # Setup training
     loss_function = nn.NLLLoss(size_average=False)
     optimizer = optim.Adam(model.parameters())
     batch_size = 30
-    epochs = 20
+    epochs = 25
 
     # Use the settings for the model file name
     model_fname = "{:d}o_{:d}m_{:d}h_ffnn.pt".format(context_size, emb_dimensions, n_hidden)
     
+    print("Training model with context size {:d}, embedding dimensions {:d} and {:d} hidden layers.".format(context_size, emb_dimensions, n_hidden))
     print("{:6s}  {:^22s}".format("", " Batch Loss"))
     print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
 
@@ -167,8 +158,25 @@ if __name__ == '__main__':
         if batch_valid_loss <= prev_valid_batch_loss:
             prev_valid_batch_loss = batch_valid_loss
             torch.save(model, model_fname)
-            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
+            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))            
         else:
             # Early termination
+            print("Terminating due to increase in validation loss:")
+            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
             break
+
     print("Saved best model on validation set as", model_fname)
+
+if __name__ == '__main__':
+    print("Loading data...")    
+    training_file = "../data/train.txt"
+    validation_file = "../data/valid.txt"
+    train_data, word_to_idx = read_corpus_data(training_file)
+    valid_data = get_corpus_indices(validation_file, word_to_idx)    
+    
+    train(train_data, valid_data, word_to_idx, context_size=2, emb_dimensions=30, n_hidden=50)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=50)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=50)       
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=100)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=100)
+    train(train_data, valid_data, word_to_idx, context_size=5, emb_dimensions=60, n_hidden=100)
