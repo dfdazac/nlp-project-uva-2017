@@ -133,35 +133,48 @@ if __name__ == '__main__':
     batch_size = 30
     epochs = 20
 
-    try:
-        # Train!        
-        print("{:6s}  {:^22s}".format("", " Batch Loss"))
-        print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
-        for epoch in range(epochs):
-            batch_train_loss = get_variable_tensor([0], dtype="float")
-            batch_valid_loss = get_variable_tensor([0], dtype="float")
+    # Use the settings for the model file name
+    model_fname = "{:d}o_{:d}m_{:d}h_ffnn.pt".format(context_size, emb_dimensions, n_hidden)
+    
+    print("{:6s}  {:^22s}".format("", " Batch Loss"))
+    print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
 
-            for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):                
-                # Predict
-                log_probs = model(get_variable_tensor(histories))
+    # Keep track of the previous loss for early termination
+    prev_valid_batch_loss = get_variable_tensor([float("inf")], dtype="float")
 
-                # Evaluate loss
-                train_loss = loss_function(log_probs, get_variable_tensor(targets))                
-                # Backward propagate and optimize the parameters
-                model.zero_grad()
-                train_loss.backward()
-                optimizer.step()
+    for epoch in range(epochs):
+        # Initialize batch losses with zeros
+        batch_train_loss = get_variable_tensor([0], dtype="float")
+        batch_valid_loss = get_variable_tensor([0], dtype="float")
 
-                # Save loss
-                batch_train_loss += train_loss
+        # Train
+        for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):                
+            # Predict
+            log_probs = model(get_variable_tensor(histories))
 
-            # Evaluate on validation set
-            for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):                
-                # Predict
-                log_probs = model(get_variable_tensor(histories))                    
-                # Evaluate loss
-                batch_valid_loss += loss_function(log_probs, get_variable_tensor(targets))
+            # Evaluate loss
+            train_loss = loss_function(log_probs, get_variable_tensor(targets))                
+            # Backward propagate and optimize the parameters
+            model.zero_grad()
+            train_loss.backward()
+            optimizer.step()
 
+            # Save loss
+            batch_train_loss += train_loss
+
+        # Evaluate on validation set
+        for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):                
+            # Predict
+            log_probs = model(get_variable_tensor(histories))                    
+            # Evaluate loss
+            batch_valid_loss += loss_function(log_probs, get_variable_tensor(targets))
+
+        # If validation loss decreased, save model
+        if batch_valid_loss.data[0] <= prev_valid_batch_loss.data[0]:
+            prev_valid_batch_loss = batch_valid_loss.clone()
+            torch.save(model, model_fname)
             print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss.data[0], batch_valid_loss.data[0]))
-    finally:
-        torch.save(model, "ffnn_model.pt")
+        else:
+            # Early termination
+            break
+    print("Saved best model on validation set as", model_fname)
