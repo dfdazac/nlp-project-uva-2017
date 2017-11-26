@@ -15,7 +15,7 @@ def sentence_prob(sentence):
         log_probability += ngram_prob.data[0, target]
     return log_probability
 
-model = torch.load("ffnn_model.pt")
+model = torch.load("ffnn_model.pt", map_location = lambda storage, loc: storage)
 word_to_idx = model.word_to_idx
 context_size = model.context_size
 

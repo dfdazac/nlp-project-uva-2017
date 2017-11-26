@@ -14,6 +14,9 @@ def read_corpus_data(corpusfname):
     in the corpus. Assumes there's one sentence per line.
     Args:
         - corpusfname (string): file name of the corpus to read
+    Returns:
+        - list: a list of list of indices (int), one list per sentence.
+        - dict: maps word to indices obtained from the corpus
     """
     word_to_idx = defaultdict(lambda: len(word_to_idx))
     S = word_to_idx[EOS_SYMBOL]
@@ -29,6 +32,15 @@ def read_corpus_data(corpusfname):
     return sentences, word_to_idx
 
 def get_corpus_indices(corpusfname, word_to_idx):
+    """ Reads corpus data given an existing word to index
+    dictionary. Useful to get the indices of a validation
+    corpus from a dictionary obtained during training.
+    Args:
+        - corpusfname (string): file name of the corpus to read
+        - word_to_idx (dict): maps word to indices
+    Returns:
+        - list: a list of list of indices (int), one list per sentence.
+    """
     sentences = []
     with open(corpusfname) as corpus:
         for line in corpus:
@@ -106,7 +118,7 @@ if __name__ == '__main__':
     training_file = "../data/train.txt"
     validation_file = "../data/valid.txt"
     train_data, word_to_idx = read_corpus_data(training_file)
-    valid_data, _ = read_corpus_data(validation_file)
+    valid_data = get_corpus_indices(validation_file, word_to_idx)
     
     # Setup model
     emb_dimensions = 60
@@ -116,7 +128,7 @@ if __name__ == '__main__':
     if CUDA:
         model.cuda()
 
-    loss_function = nn.NLLLoss()
+    loss_function = nn.NLLLoss(size_average=False)
     optimizer = optim.Adam(model.parameters())
     batch_size = 30
     epochs = 20
