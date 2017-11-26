@@ -123,13 +123,13 @@ if __name__ == '__main__':
 
     try:
         # Train!        
-        print("{:6s}  {:^16s}".format("", "Loss"))
-        print("{:6s}  {:^8s}{:^8s}".format("Epoch", "Train", "Validation"))
+        print("{:6s}  {:^22s}".format("", " Batch Loss"))
+        print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
         for epoch in range(epochs):
             batch_train_loss = get_variable_tensor([0], dtype="float")
             batch_valid_loss = get_variable_tensor([0], dtype="float")
 
-            for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
+            for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):                
                 # Predict
                 log_probs = model(get_variable_tensor(histories))
 
@@ -150,6 +150,6 @@ if __name__ == '__main__':
                 # Evaluate loss
                 batch_valid_loss += loss_function(log_probs, get_variable_tensor(targets))
 
-            print("{:2d}/{:2d}:  {:^8.2f}{:^8.2f}".format(epoch+1, epochs, batch_train_loss.data[0], batch_valid_loss.data[0]))
+            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss.data[0], batch_valid_loss.data[0]))
     finally:
         torch.save(model, "ffnn_model.pt")
