@@ -65,19 +65,13 @@ def next_ngram_sample(sentence, context_size, S):
         yield history, target
         history = history[1:] + [target]
 
-def get_variable_tensor(x, dtype="long"):
+def get_variable(x):
     """ Helper function to get autograd.Variable given an array.
-    The associated torch tensor can be of type long or float.
+    The array is converted to torch.LongTensor.
     Args:
         - x (array): the array to be converted.
-        - dtype ({"long", "float"}, optional): The type of the torch tensor.
-    """
-    if dtype == "long":
-        tensor = torch.cuda.LongTensor(x) if CUDA else torch.LongTensor(x)
-    elif dtype == "float":
-        tensor = torch.cuda.FloatTensor(x) if CUDA else torch.FloatTensor(x)
-    else:
-        raise ValueError("Invalid tensor type")
+    """    
+    tensor = torch.cuda.LongTensor(x) if CUDA else torch.LongTensor(x)    
     return autograd.Variable(tensor)
 
 def next_batch(data, context_size, batch_size, S):
@@ -140,40 +134,40 @@ if __name__ == '__main__':
     print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
 
     # Keep track of the previous loss for early termination
-    prev_valid_batch_loss = get_variable_tensor([float("inf")], dtype="float")
+    prev_valid_batch_loss = float("inf")
 
     for epoch in range(epochs):
         # Initialize batch losses with zeros
-        batch_train_loss = get_variable_tensor([0], dtype="float")
-        batch_valid_loss = get_variable_tensor([0], dtype="float")
+        batch_train_loss = 0
+        batch_valid_loss = 0
 
         # Train
         for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):                
             # Predict
-            log_probs = model(get_variable_tensor(histories))
+            log_probs = model(get_variable(histories))
 
             # Evaluate loss
-            train_loss = loss_function(log_probs, get_variable_tensor(targets))                
+            train_loss = loss_function(log_probs, get_variable(targets))                
             # Backward propagate and optimize the parameters
             model.zero_grad()
             train_loss.backward()
             optimizer.step()
 
             # Save loss
-            batch_train_loss += train_loss
+            batch_train_loss += train_loss.data[0]
 
         # Evaluate on validation set
         for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):                
             # Predict
-            log_probs = model(get_variable_tensor(histories))                    
+            log_probs = model(get_variable(histories))                    
             # Evaluate loss
-            batch_valid_loss += loss_function(log_probs, get_variable_tensor(targets))
+            batch_valid_loss += loss_function(log_probs, get_variable(targets)).data[0]
 
         # If validation loss decreased, save model
-        if batch_valid_loss.data[0] <= prev_valid_batch_loss.data[0]:
-            prev_valid_batch_loss = batch_valid_loss.clone()
+        if batch_valid_loss <= prev_valid_batch_loss:
+            prev_valid_batch_loss = batch_valid_loss
             torch.save(model, model_fname)
-            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss.data[0], batch_valid_loss.data[0]))
+            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
         else:
             # Early termination
             break
