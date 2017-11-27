@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import ffnn_train as nnt
 from numpy import e
+from datetime import datetime
 
 def batch_perplexity(model, sentences):
     """ Evaluates the total perplexity of a model
@@ -29,11 +30,45 @@ def batch_perplexity(model, sentences):
     # so the minus sign is dropped in the perplexity calculation
     return e ** (total_log_prob/n_tokens)
 
-model_name = "4o_30m_50h_ffnn.pt"
-if nnt.CUDA:
-    model = torch.load(model_name)
-else:
-    model = torch.load(model_name, map_location = lambda storage, loc: storage)
+def evaluate_models(model_names):
+    """ Evaluates the perplexities of different neural language models
+    and saves their perplexities on train, validation and test sets.
+    Args:
+        - model_names (list): contains the file names (str) of the 
+            models exported using torch.save.
+    """
+    results = "{:^25s}{:^10s}{:^10s}{:^10s}\n".format("File name", "Train", "Validation", "Test")
+    
+    for model_name in model_names:
+        if nnt.CUDA:
+            model = torch.load(model_name)
+        else:
+            model = torch.load(model_name, map_location = lambda storage, loc: storage)
 
-sentences = nnt.get_corpus_indices("../data/train.txt", model.word_to_idx)
-print("Perplexity:", batch_perplexity(model, sentences))
+        sentences = nnt.get_corpus_indices("../data/train.txt", model.word_to_idx)
+        train_perp = int(batch_perplexity(model, sentences))
+        sentences = nnt.get_corpus_indices("../data/valid.txt", model.word_to_idx)
+        valid_perp = int(batch_perplexity(model, sentences))
+        sentences = nnt.get_corpus_indices("../data/test.txt", model.word_to_idx)
+        test_perp = int(batch_perplexity(model, sentences))
+
+        results += "{:^25s}{:^10d}{:^10d}{:^10d}\n".format(model_name, train_perp, valid_perp, test_perp)
+
+    now = datetime.now()
+    with open("ffnn_perplexities_" + datetime.now().strftime('%Y_%m_%d_%H%M') + ".txt", "w") as file:
+        file.write(results)
+
+model_names = ["4o_30m_50h_ffnn.pt",
+    "2o_30m_50h_ffnn.pt",
+    "4o_100m_150h_ffnn.pt",
+    "4o_30m_100h_ffnn.pt",
+    "4o_30m_50h_ffnn.pt",
+    "4o_60m_100h_ffnn.pt",
+    "4o_60m_150h_ffnn.pt",
+    "4o_60m_50h_ffnn.pt",
+    "5o_100m_200h_ffnn.pt",
+    "5o_100m_250h_ffnn.pt",
+    "5o_60m_100h_ffnn.pt",
+    "5o_60m_150h_ffnn.pt"]
+
+evaluate_models(model_names)
