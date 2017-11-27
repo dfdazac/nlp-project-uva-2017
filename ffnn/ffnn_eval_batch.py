@@ -37,7 +37,7 @@ def evaluate_models(model_names):
         - model_names (list): contains the file names (str) of the 
             models exported using torch.save.
     """
-    results = "{:^25s}{:^10s}{:^10s}{:^10s}\n".format("File name", "Train", "Validation", "Test")
+    results = "{:25s}{:^10s}{:^10s}{:^10s}\n".format("Model name", "Train", "Validation", "Test")
     
     for model_name in model_names:
         if nnt.CUDA:
@@ -52,7 +52,7 @@ def evaluate_models(model_names):
         sentences = nnt.get_corpus_indices("../data/test.txt", model.word_to_idx)
         test_perp = int(batch_perplexity(model, sentences))
 
-        results += "{:^25s}{:^10d}{:^10d}{:^10d}\n".format(model_name, train_perp, valid_perp, test_perp)
+        results += "{:25s}{:^10d}{:^10d}{:^10d}\n".format(model_name, train_perp, valid_perp, test_perp)
 
     now = datetime.now()
     with open("ffnn_perplexities_" + datetime.now().strftime('%Y_%m_%d_%H%M') + ".txt", "w") as file:

@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.autograd as autograd
 from ffnn import FFNeuralModel
+from numpy import e
 
 CUDA = torch.cuda.is_available()
 EOS_SYMBOL = "<s>"
@@ -107,14 +108,18 @@ def next_batch(data, context_size, batch_size, S):
             yield histories, targets
 
 def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_hidden):
+    # Count tokens including end of sentence symbol
+    n_tokens_train = sum(map(lambda s: len(s) + 1, train_data))
+    n_tokens_valid = sum(map(lambda s: len(s) + 1, valid_data))
+
     # Setup model
     model = FFNeuralModel(emb_dimensions, context_size, n_hidden, word_to_idx)
     if CUDA:
         model.cuda()
     # Setup training
     loss_function = nn.NLLLoss(size_average=False)
-    optimizer = optim.Adam(model.parameters())
-    batch_size = 30
+    optimizer = optim.Adam(model.parameters(), lr=0.0008)
+    batch_size = 20
     epochs = 25
 
     # Use the settings for the model file name
@@ -125,12 +130,12 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
     print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
 
     # Keep track of the previous loss for early termination
-    prev_valid_batch_loss = float("inf")
-
+    prev_valid_batch_perplexity = float("inf")
+    terminate_early = False
     for epoch in range(epochs):
-        # Initialize batch losses with zeros
-        batch_train_loss = 0
-        batch_valid_loss = 0
+        # Initialize perplexities with zeros
+        batch_train_perplexity = 0
+        batch_valid_perplexity = 0
 
         # Train
         for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):                
@@ -145,24 +150,29 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
             optimizer.step()
 
             # Save loss
-            batch_train_loss += train_loss.data[0]
+            batch_train_perplexity += train_loss.data[0]
 
         # Evaluate on validation set
         for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):                
             # Predict
             log_probs = model(get_variable(histories))                    
             # Evaluate loss
-            batch_valid_loss += loss_function(log_probs, get_variable(targets)).data[0]
+            batch_valid_perplexity += loss_function(log_probs, get_variable(targets)).data[0]
 
-        # If validation loss decreased, save model
-        if batch_valid_loss <= prev_valid_batch_loss:
-            prev_valid_batch_loss = batch_valid_loss
+        # Convert batch losses to perplexities
+        batch_train_perplexity = e ** (batch_train_perplexity/n_tokens_train)
+        batch_valid_perplexity = e ** (batch_valid_perplexity/n_tokens_valid)
+
+        # If validation perplexity decreased, save model
+        if batch_valid_perplexity <= prev_valid_batch_perplexity:
+            prev_valid_batch_loss = batch_valid_perplexity
             torch.save(model, model_fname)
-            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))            
         else:
             # Early termination
-            print("Terminating due to increase in validation loss:")
-            print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
+            print("Terminating due to increase in validation perplexity:")
+        print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_perplexity, batch_valid_perplexity))
+            
+        if terminate_early:
             break
 
     print("Saved best model on validation set as", model_fname)
@@ -170,8 +180,20 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
 if __name__ == '__main__':
     print("Loading data...")    
     training_file = "../data/train.txt"
-    validation_file = "../data/train.txt"
+    validation_file = "../data/valid.txt"
     train_data, word_to_idx = read_corpus_data(training_file)
     valid_data = get_corpus_indices(validation_file, word_to_idx)    
     
+    train(train_data, valid_data, word_to_idx, context_size=5, emb_dimensions=100, n_hidden=250)
+    train(train_data, valid_data, word_to_idx, context_size=5, emb_dimensions=100, n_hidden=200)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=150)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=100, n_hidden=150)
+    train(train_data, valid_data, word_to_idx, context_size=5, emb_dimensions=60, n_hidden=150)
+    train(train_data, valid_data, word_to_idx, context_size=2, emb_dimensions=30, n_hidden=50)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=100)
     train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=50)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=50)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=50)
+    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=100)
+    train(train_data, valid_data, word_to_idx, context_size=5, emb_dimensions=60, n_hidden=100)
+
