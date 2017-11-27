@@ -170,13 +170,8 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
 if __name__ == '__main__':
     print("Loading data...")    
     training_file = "../data/train.txt"
-    validation_file = "../data/valid.txt"
+    validation_file = "../data/train.txt"
     train_data, word_to_idx = read_corpus_data(training_file)
     valid_data = get_corpus_indices(validation_file, word_to_idx)    
     
-    train(train_data, valid_data, word_to_idx, context_size=2, emb_dimensions=30, n_hidden=50)
     train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=50)
-    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=50)       
-    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=30, n_hidden=100)
-    train(train_data, valid_data, word_to_idx, context_size=4, emb_dimensions=60, n_hidden=100)
-    train(train_data, valid_data, word_to_idx, context_size=5, emb_dimensions=60, n_hidden=100)

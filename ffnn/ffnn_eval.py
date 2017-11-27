@@ -2,7 +2,7 @@ import torch
 import torch.autograd as autograd
 from ffnn import FFNeuralModel
 import lm_eval as lme
-import numpy as np
+from numpy import e
 from ffnn_train import next_ngram_sample
 
 def sentence_prob(sentence):
@@ -15,8 +15,8 @@ def sentence_prob(sentence):
         log_probability += ngram_prob.data[0, target]
     return log_probability
 
-model = torch.load("ffnn_model.pt", map_location = lambda storage, loc: storage)
+model = torch.load("4o_30m_50h_ffnn.pt", map_location = lambda storage, loc: storage)
 word_to_idx = model.word_to_idx
 context_size = model.context_size
 
-print("Perplexity:", lme.perplexity("../data/train.txt", sentence_prob, base=np.e))
+print("Perplexity:", lme.perplexity("../data/train.txt", sentence_prob, base=e))
