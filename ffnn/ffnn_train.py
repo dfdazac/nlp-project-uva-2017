@@ -165,7 +165,7 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
 
         # If validation perplexity decreased, save model
         if batch_valid_perplexity <= prev_valid_batch_perplexity:
-            prev_valid_batch_loss = batch_valid_perplexity
+            prev_valid_batch_perplexity = batch_valid_perplexity
             torch.save(model, model_fname)
         else:
             # Early termination
