@@ -34,7 +34,7 @@ def evaluate_models(model_names):
     """ Evaluates the perplexities of different neural language models
     and saves their perplexities on train, validation and test sets.
     Args:
-        - model_names (list): contains the file names (str) of the 
+        - model_names (list): contains the file names (str) of the
             models exported using torch.save.
     """
     results = "{:25s}{:^10s}{:^10s}{:^10s}\n".format("Model name", "Train", "Validation", "Test")
