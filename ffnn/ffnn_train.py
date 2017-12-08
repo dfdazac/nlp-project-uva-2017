@@ -118,8 +118,8 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
         model.cuda()
     # Setup training
     loss_function = nn.NLLLoss(size_average=False)
-    optimizer = optim.Adam(model.parameters(), lr=0.0008)
-    batch_size = 1
+    optimizer = optim.Adam(model.parameters())
+    batch_size = 20
     epochs = 25
 
     # Use the settings for the model file name
