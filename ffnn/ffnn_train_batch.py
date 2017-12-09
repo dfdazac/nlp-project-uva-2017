@@ -3,47 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.autograd as autograd
-import torch.nn.functional as F
+from ffnn import FFNeuralModel
 from numpy import e
-
-class FFNeuralModel(nn.Module):
-    """ A Neural Language Model based on Bengio (2003)
-    Args:
-        - emb_dimensions (int): word embeddings dimensions
-        - context_size: number of words used as context
-        - n_hidden: number of units in the hidden layer
-        - word_to_idx (dict): a dictionary of word indices.
-            It allows to make meaningful predictions based on the
-            data used during training.
-    """
-    def __init__(self, emb_dimensions, context_size, n_hidden, word_to_idx):
-        super(FFNeuralModel, self).__init__()
-
-        vocab_size = len(word_to_idx)
-        self.embeddings = nn.Embedding(vocab_size, emb_dimensions)
-        self.linear1 = nn.Linear(emb_dimensions * context_size, n_hidden)
-        self.linear2 = nn.Linear(n_hidden, vocab_size)
-
-        self.word_to_idx = word_to_idx
-        self.idx_to_word = {i: word for word, i in word_to_idx.items()}
-        self.context_size = context_size
-
-    def forward(self, inputs):
-        """ Calculates the log-probabilities for all words
-        given the inputs.
-        Args:
-            - inputs (tensor): (N, context_size), a tensor containing word indices
-        Returns:
-            - tensor: (N, vocab_size), the log-probabilities
-        """
-        # Get the embeddings for the inputs and reshape to N rows
-        embeddings = self.embeddings(inputs).view((1, -1))
-        # Forward propagate
-        h = F.tanh(self.linear1(embeddings))
-        y = self.linear2(h)
-        log_probs = F.log_softmax(y)
-        return log_probs
-
 
 CUDA = torch.cuda.is_available()
 EOS_SYMBOL = "<s>"
@@ -114,12 +75,42 @@ def get_variable(x, volatile=False):
     tensor = torch.cuda.LongTensor(x) if CUDA else torch.LongTensor(x)
     return autograd.Variable(tensor, volatile=volatile)
 
+def next_batch(data, context_size, batch_size, S):
+    """ Generates minibatches of histories and targets.
+    Args:
+        - data (list): contains lists of words (int), each list
+            represents a sentence.
+        - context_size (int): the number of words used as context.
+        - batch_size (int): the number of histories and targets
+            per minibatch.
+        - S (int): the index of the sentence delimiter <s>.
+    """
+    start_padding = [S] * context_size
+
+    for i in range(0, len(data), batch_size):
+        # To each sentence add sentence delimiters
+        batch = [start_padding + d + [S] for d in data[i:i+batch_size]]
+
+        max_length = max(map(len, batch))
+
+        # For each minibatch generate histories of lenght context_size
+        # as well as targets
+        for j in range(max_length - context_size):
+            histories = []
+            targets = []
+
+            # The difference of length between the sentences is handled
+            # by only generating history - target pairs when it is possible
+            for sentence in batch:
+                if j < len(sentence) - context_size:
+                    histories.append(sentence[j:j + context_size])
+                    targets.append(sentence[j + context_size])
+            yield histories, targets
+
 def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_hidden):
     # Count tokens including end of sentence symbol
     n_tokens_train = sum(map(lambda s: len(s) + 1, train_data))
     n_tokens_valid = sum(map(lambda s: len(s) + 1, valid_data))
-
-    S = word_to_idx[EOS_SYMBOL]
 
     # Setup model
     model = FFNeuralModel(emb_dimensions, context_size, n_hidden, word_to_idx)
@@ -127,7 +118,8 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
         model.cuda()
     # Setup training
     loss_function = nn.NLLLoss()
-    optimizer = optim.Adam(model.parameters(), weight_decay=0.0001)
+    optimizer = optim.Adam(model.parameters())
+    batch_size = 20
     epochs = 25
 
     # Use the settings for the model file name
@@ -139,45 +131,45 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
     print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
 
     # Keep track of the previous loss for early termination
-    prev_valid_loss = float("inf")
+    prev_valid_batch_loss = float("inf")
     terminate_early = False
     for epoch in range(epochs):
-        train_loss = 0
-        valid_loss = 0
-        print("Training")
-        for sentence in train_data:
-            # Clear gradients
+        batch_train_loss = 0
+        batch_valid_loss = 0
+
+        # Train
+        for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
             model.zero_grad()
 
-            sentence_loss = autograd.Variable(torch.cuda.FloatTensor([0])) if CUDA else autograd.Variable(torch.FloatTensor([0]))
-            for history, target in next_ngram_sample(sentence, context_size, S):
-                # Forward propagate to get n-gram log-probabilities
-                log_probs = model(get_variable(history))
+            # Predict
+            log_probs = model(get_variable(histories))
 
-                # Accumulate the loss for the obtained log-probability
-                sentence_loss += loss_function(log_probs, get_variable([target]))
-
-            train_loss += sentence_loss.data[0]
+            # Evaluate loss
+            train_loss = loss_function(log_probs, get_variable(targets))
             # Backward propagate and optimize the parameters
-            sentence_loss.backward()
+            train_loss.backward()
             optimizer.step()
 
-        # Check loss in validation set
-        for sentence in valid_data:
-            for history, target in next_ngram_sample(sentence, context_size, S):
-                log_probs = model(get_variable(history, volatile=True))
-                valid_loss += loss_function(log_probs, get_variable([target])).data[0]
+            # Save loss
+            batch_train_loss += train_loss.data[0]
+
+        # Evaluate on validation set
+        for histories, targets in next_batch(valid_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
+            # Predict
+            log_probs = model(get_variable(histories, volatile=True))
+            # Evaluate loss
+            batch_valid_loss += loss_function(log_probs, get_variable(targets)).data[0]
 
         # If validation loss decreased, save model
-        if valid_loss <= prev_valid_loss:
-            prev_valid_loss = valid_loss
+        if batch_valid_loss <= prev_valid_batch_loss:
+            prev_valid_batch_loss = batch_valid_loss
             torch.save(model, model_fname)
         else:
             # Early termination
             terminate_early = True
             print("Terminating due to increase in validation loss:")
-
-        print("{:2d}/{:2d}:  {:.9f}  {:.9f}".format(epoch+1, epochs, train_loss, valid_loss))
+        #print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
+        print("{:2d}/{:2d}:  {:.9f}  {:.9f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
 
         if terminate_early:
             break

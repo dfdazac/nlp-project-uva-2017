@@ -38,7 +38,7 @@ def evaluate_models(model_names):
             models exported using torch.save.
     """
     results = "{:25s}{:^10s}{:^10s}{:^10s}\n".format("Model name", "Train", "Validation", "Test")
-    
+
     for model_name in model_names:
         if nnt.CUDA:
             model = torch.load(model_name)
@@ -58,17 +58,6 @@ def evaluate_models(model_names):
     with open("ffnn_perplexities_" + datetime.now().strftime('%Y_%m_%d_%H%M') + ".txt", "w") as file:
         file.write(results)
 
-model_names = ["4o_30m_50h_ffnn.pt",
-    "2o_30m_50h_ffnn.pt",
-    "4o_100m_150h_ffnn.pt",
-    "4o_30m_100h_ffnn.pt",
-    "4o_30m_50h_ffnn.pt",
-    "4o_60m_100h_ffnn.pt",
-    "4o_60m_150h_ffnn.pt",
-    "4o_60m_50h_ffnn.pt",
-    "5o_100m_200h_ffnn.pt",
-    "5o_100m_250h_ffnn.pt",
-    "5o_60m_100h_ffnn.pt",
-    "5o_60m_150h_ffnn.pt"]
+model_names = ["4o_30m_100h_ffnn.pt"]
 
 evaluate_models(model_names)
