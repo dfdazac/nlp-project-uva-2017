@@ -111,6 +111,8 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
     # Count tokens including end of sentence symbol
     n_tokens_train = sum(map(lambda s: len(s) + 1, train_data))
     n_tokens_valid = sum(map(lambda s: len(s) + 1, valid_data))
+    print("Training tokens:", n_tokens_train)
+    print("Validation tokens:", n_tokens_valid)
 
     # Setup model
     model = FFNeuralModel(emb_dimensions, context_size, n_hidden, word_to_idx)

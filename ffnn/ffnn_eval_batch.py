@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import ffnn_train as nnt
+import ffnn_train_batch as nnt
 from numpy import e
 from datetime import datetime
 
@@ -45,11 +45,11 @@ def evaluate_models(model_names):
         else:
             model = torch.load(model_name, map_location = lambda storage, loc: storage)
 
-        sentences = nnt.get_corpus_indices("../data/train.txt", model.word_to_idx)
+        sentences = nnt.get_corpus_indices("../data/brown_train.txt", model.word_to_idx)
         train_perp = int(batch_perplexity(model, sentences))
-        sentences = nnt.get_corpus_indices("../data/valid.txt", model.word_to_idx)
+        sentences = nnt.get_corpus_indices("../data/brown_valid.txt", model.word_to_idx)
         valid_perp = int(batch_perplexity(model, sentences))
-        sentences = nnt.get_corpus_indices("../data/test.txt", model.word_to_idx)
+        sentences = nnt.get_corpus_indices("../data/brown_test.txt", model.word_to_idx)
         test_perp = int(batch_perplexity(model, sentences))
 
         results += "{:25s}{:^10d}{:^10d}{:^10d}\n".format(model_name, train_perp, valid_perp, test_perp)
