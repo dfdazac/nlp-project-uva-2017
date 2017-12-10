@@ -144,7 +144,7 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
     for epoch in range(epochs):
         train_loss = 0
         valid_loss = 0
-        print("Training")
+
         for sentence in train_data:
             # Clear gradients
             model.zero_grad()
