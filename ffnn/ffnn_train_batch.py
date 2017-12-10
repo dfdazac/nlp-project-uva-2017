@@ -118,7 +118,8 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
         model.cuda()
     # Setup training
     loss_function = nn.NLLLoss()
-    optimizer = optim.Adam(model.parameters())
+    valid_loss_function = nn.NLLLoss(size_average=False)
+    optimizer = optim.Adam(model.parameters(), weight_decay=0.0001)
     batch_size = 20
     epochs = 25
 
@@ -154,11 +155,11 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
             batch_train_loss += train_loss.data[0]
 
         # Evaluate on validation set
-        for histories, targets in next_batch(valid_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
+        for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):
             # Predict
             log_probs = model(get_variable(histories, volatile=True))
             # Evaluate loss
-            batch_valid_loss += loss_function(log_probs, get_variable(targets)).data[0]
+            batch_valid_loss += valid_loss_function(log_probs, get_variable(targets)).data[0]
 
         # If validation loss decreased, save model
         if batch_valid_loss <= prev_valid_batch_loss:
