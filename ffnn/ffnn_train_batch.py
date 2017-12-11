@@ -6,6 +6,8 @@ import torch.autograd as autograd
 from ffnn import FFNeuralModel
 from numpy import e
 
+torch.manual_seed(42)
+
 CUDA = torch.cuda.is_available()
 EOS_SYMBOL = "<s>"
 UNK_SYMBOL = "<unk>"
@@ -107,12 +109,32 @@ def next_batch(data, context_size, batch_size, S):
                     targets.append(sentence[j + context_size])
             yield histories, targets
 
+def next_batch_ngrams(batch, context_size):
+    max_length = max(map(len, batch))
+
+    # For each minibatch generate histories of lenght context_size
+    # as well as targets
+    for j in range(max_length - context_size):
+        histories = []
+        targets = []
+
+        # The difference of length between the sentences is handled
+        # by only generating history - target pairs when it is possible
+        for sentence in batch:
+            if j < len(sentence) - context_size:
+                histories.append(sentence[j:j + context_size])
+                targets.append(sentence[j + context_size])
+        yield histories, targets
+
+
 def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_hidden):
     # Count tokens including end of sentence symbol
     n_tokens_train = sum(map(lambda s: len(s) + 1, train_data))
     n_tokens_valid = sum(map(lambda s: len(s) + 1, valid_data))
     print("Training tokens:", n_tokens_train)
     print("Validation tokens:", n_tokens_valid)
+    S = word_to_idx[EOS_SYMBOL]
+    start_padding = [S] * context_size
 
     # Setup model
     model = FFNeuralModel(emb_dimensions, context_size, n_hidden, word_to_idx)
@@ -122,7 +144,7 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
     loss_function = nn.NLLLoss()
     valid_loss_function = nn.NLLLoss(size_average=False)
     optimizer = optim.Adam(model.parameters(), weight_decay=0.0001)
-    batch_size = 20
+    batch_size = 16
     epochs = 25
 
     # Use the settings for the model file name
@@ -140,21 +162,18 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
         batch_train_loss = 0
         batch_valid_loss = 0
 
-        # Train
-        for histories, targets in next_batch(train_data, context_size, batch_size, word_to_idx[EOS_SYMBOL]):
+        for i in range(0, len(train_data), batch_size):
+            # To each sentence add sentence delimiters
+            batch = [start_padding + d + [S] for d in train_data[i:i+batch_size]]
             model.zero_grad()
+            for histories, targets in next_batch_ngrams(batch, context_size):
+                # Predict
+                log_probs = model(get_variable(histories))
+                train_loss = loss_function(log_probs, get_variable(targets))
+                train_loss.backward()
 
-            # Predict
-            log_probs = model(get_variable(histories))
-
-            # Evaluate loss
-            train_loss = loss_function(log_probs, get_variable(targets))
-            # Backward propagate and optimize the parameters
-            train_loss.backward()
-            optimizer.step()
-
-            # Save loss
-            batch_train_loss += train_loss.data[0]
+                batch_train_loss += train_loss.data[0]
+                optimizer.step()
 
         # Evaluate on validation set
         for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):
