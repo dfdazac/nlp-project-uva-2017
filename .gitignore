@@ -103,3 +103,5 @@ ENV/
 # Misc
 *.zip
 i_data/
+*.arpa
+*.bin

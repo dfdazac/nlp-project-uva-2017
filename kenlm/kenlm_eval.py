@@ -10,13 +10,11 @@ train_fname = "brown_train.txt.UNK"
 valid_fname = "brown_valid.txt.UNK"
 # The relative path containing the training and validation corpora
 data_path = "../data/"
-# The path where arpa and binary files will be saved
-output_path = "../i_data/"
 # Path to KenLM binaries
 klmbin_path = "/home/daniel/kenlm/build/bin/"
 
 
-computed_files = listdir(output_path)
+computed_files = listdir()
 
 orders = np.array([2, 3, 4, 5, 6])
 train_perplexities = np.zeros(len(orders))
@@ -30,12 +28,12 @@ for i, n_order in enumerate(orders):
 
     # If such files exist, don't recompute them
     if arpa_fname not in computed_files:
-        run(" ".join([klmbin_path + "lmplz -o", order, "<", data_path + train_fname, ">", output_path + arpa_fname]), shell=True)
+        run(" ".join([klmbin_path + "lmplz -o", order, "<", data_path + train_fname, ">", arpa_fname]), shell=True)
     if bin_fname not in computed_files:
-        run(" ".join([klmbin_path + "build_binary", output_path + arpa_fname, output_path + bin_fname]), shell=True)
+        run(" ".join([klmbin_path + "build_binary", arpa_fname, bin_fname]), shell=True)
 
     # Evaluate model on training and validation sets
-    model = kenlm.LanguageModel(output_path + bin_fname)
+    model = kenlm.LanguageModel(bin_fname)
     train_perplexities[i] = lme.perplexity(data_path + train_fname, model.score, base=10)
     valid_perplexities[i] = lme.perplexity(data_path + valid_fname, model.score, base=10)
 

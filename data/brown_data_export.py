@@ -1,6 +1,10 @@
 from nltk.corpus import brown
 from collections import Counter
 
+# This script generates training, validation and test sets from the
+# Brown corpus in an attempt to reproduce the results by Bengio et. al. (2003)
+# with FFNN language models.
+
 def save_sentences(file_name, sentences):
     """ Saves a list of sentences to a file. Each list
     is a list containing words.
@@ -57,6 +61,6 @@ print("Validation set size:", sum(map(len, valid_set)), "words")
 print("Test set size:", sum(map(len, test_set)), "words")
 
 # Save to text files
-save_sentences("brown_train.txt.UNK", train_set)
-save_sentences("brown_valid.txt.UNK", valid_set)
-save_sentences("brown_test.txt.UNK", test_set)
+save_sentences("brown_train.UNK.txt", train_set)
+save_sentences("brown_valid.UNK.txt", valid_set)
+save_sentences("brown_test.UNK.txt", test_set)
