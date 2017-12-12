@@ -176,6 +176,7 @@ def train(train_data, valid_data, word_to_idx, context_size, emb_dimensions, n_h
                 optimizer.step()
 
         # Evaluate on validation set
+        # TODO: Use next_batch_ngrams instead of next_batch here, and remove next_batch
         for histories, targets in next_batch(valid_data, context_size, len(valid_data), word_to_idx[EOS_SYMBOL]):
             # Predict
             log_probs = model(get_variable(histories, volatile=True))
