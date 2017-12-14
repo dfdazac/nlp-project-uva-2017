@@ -1,30 +1,27 @@
-import torch
-import torch.nn as nn
-import ffnn_train_batch as nnt
-from numpy import e
+from torch import load
+from torch.nn import NLLLoss
+import ffnn_utils as utils
 from datetime import datetime
+from numpy import e
 
-def batch_perplexity(model, sentences):
+def compute_perplexity(model, sentences):
     """ Evaluates the total perplexity of a model
     over a list of sentences. Uses batches for a
     large increase in evaluation speed.
     """
-
-    # When counting tokens, add 1 to all sentences
-    # to count the end of sentence symbol
-    n_tokens = sum(map(lambda s: len(s) + 1, sentences))
-
-    context_size = model.context_size
-    S = model.word_to_idx["<s>"]
+    n_tokens = 0
 
     # Since we want the sum of losses (i.e. log-probabilities)
     # we must disable averaging over batches
-    loss_function = nn.NLLLoss(size_average=False)
+    loss_function = NLLLoss(size_average=False)
     total_log_prob = 0
 
-    for histories, targets in nnt.next_batch(sentences, context_size, len(sentences), S):
-        log_probs = model(nnt.get_variable(histories))
-        total_log_prob += loss_function(log_probs, nnt.get_variable(targets)).data[0]
+    for histories, targets in utils.next_batch_ngrams(sentences, model.context_size):
+        log_probs = model(utils.get_variable(histories), volatile=True)
+        total_log_prob += loss_function(log_probs, utils.get_variable(targets)).data[0]
+        n_tokens += len(targets)
+
+    print("Tokens:", n_tokens)
 
     # Note that NLLLoss returns the **negative** log-likelihood,
     # so the minus sign is dropped in the perplexity calculation
@@ -40,19 +37,19 @@ def evaluate_models(model_names):
     results = "{:25s}{:^10s}{:^10s}{:^10s}\n".format("Model name", "Train", "Validation", "Test")
 
     for model_name in model_names:
-        if nnt.CUDA:
-            model = torch.load(model_name)
+        if utils.CUDA:
+            model = load(model_name)
         else:
-            model = torch.load(model_name, map_location = lambda storage, loc: storage)
+            model = load(model_name, map_location = lambda storage, loc: storage)
 
-        sentences = nnt.get_corpus_indices("../data/brown_train.txt", model.word_to_idx)
-        train_perp = int(batch_perplexity(model, sentences))
-        sentences = nnt.get_corpus_indices("../data/brown_valid.txt", model.word_to_idx)
-        valid_perp = int(batch_perplexity(model, sentences))
-        sentences = nnt.get_corpus_indices("../data/brown_test.txt", model.word_to_idx)
-        test_perp = int(batch_perplexity(model, sentences))
+        sentences = utils.get_corpus_indices("../data/brown_train.txt", model.word_to_idx)
+        train_perp = compute_perplexity(model, sentences)
+        sentences = utils.get_corpus_indices("../data/brown_valid.txt", model.word_to_idx)
+        valid_perp = compute_perplexity(model, sentences)
+        sentences = utils.get_corpus_indices("../data/brown_test.txt", model.word_to_idx)
+        test_perp = compute_perplexity(model, sentences)
 
-        results += "{:25s}{:^10d}{:^10d}{:^10d}\n".format(model_name, train_perp, valid_perp, test_perp)
+        results += "{:25s}{:^10.0f}{:^10.0f}{:^10.0f}\n".format(model_name, train_perp, valid_perp, test_perp)
 
     now = datetime.now()
     with open("ffnn_perplexities_" + datetime.now().strftime('%Y_%m_%d_%H%M') + ".txt", "w") as file:

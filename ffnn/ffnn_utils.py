@@ -11,12 +11,12 @@ def read_corpus_data(corpusfname, context_size):
     in the corpus. Assumes there's one sentence per line. To each sentence
     it adds start and end of sentence delimiters according to context_size.
     Args:
-        - corpusfname (string): file name of the corpus to read
+        - corpusfname (string): file name of the corpus to read.
         - context_size (int): the number of sentence delimiters (<s>)
         added to each sentence. This is used when training a language model.
     Returns:
         - list: a list of list of indices (int), one list per sentence.
-        - dict: maps word to indices obtained from the corpus
+        - dict: maps word to indices obtained from the corpus.
     """
     # Create word to index dictionary and register sentence delimiter and unknown
     # symbols
@@ -64,6 +64,13 @@ def get_variable(x, volatile=False):
     return autograd.Variable(tensor, volatile=volatile)
 
 def next_batch_ngrams(batch, context_size):
+    """ Given a batch (which can even be of length 1), returns a batch of
+    n-gram histories of length context_size together with the next word
+    (the "target").
+    Args:
+        - batch (list): contains lists of indices (int) representing sentences.
+        - context_size (int): the number of words used to make a prediction.
+    """
     max_length = max(map(len, batch))
 
     # For each minibatch generate histories of lenght context_size

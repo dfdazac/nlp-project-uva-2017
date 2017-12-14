@@ -1,6 +1,6 @@
 from torch import save
-import torch.nn as nn
-import torch.optim as optim
+from torch.nn import NLLLoss
+from torch.optim import Adam
 from ffnn import FFNeuralModel
 import ffnn_utils as utils
 
@@ -12,10 +12,10 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
     model = FFNeuralModel(emb_dimensions, context_size, n_hidden, word_to_idx)
     if utils.CUDA:
         model.cuda()
-    loss_function = nn.NLLLoss()
-    valid_loss_function = nn.NLLLoss(size_average=False)
-    optimizer = optim.Adam(model.parameters(), weight_decay=0.0001)
-    batch_size = 16
+    loss_function = NLLLoss()
+    valid_loss_function = NLLLoss(size_average=False)
+    optimizer = Adam(model.parameters(), weight_decay=0.0001)
+    batch_size = 32
     epochs = 25
 
     # Use the settings for the model file name
@@ -44,7 +44,7 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
                 train_loss.backward()
 
                 batch_train_loss += train_loss.data[0]
-                optimizer.step()
+            optimizer.step()
 
         # Evaluate on validation set
         for histories, targets in utils.next_batch_ngrams(valid_data, context_size):
@@ -71,7 +71,7 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
 
 if __name__ == '__main__':
     print("Loading data...")
-    train_fname = "../data/ptb_short.txt"
-    valid_fname = "../data/ptb_short.txt"
+    train_fname = "../data/brown_train.txt"
+    valid_fname = "../data/brown_valid.txt"
 
     train(train_fname, valid_fname, context_size=4, emb_dimensions=30, n_hidden=100)
