@@ -17,11 +17,9 @@ def compute_perplexity(model, sentences):
     total_log_prob = 0
 
     for histories, targets in utils.next_batch_ngrams(sentences, model.context_size):
-        log_probs = model(utils.get_variable(histories), volatile=True)
+        log_probs = model(utils.get_variable(histories, volatile=True))
         total_log_prob += loss_function(log_probs, utils.get_variable(targets)).data[0]
         n_tokens += len(targets)
-
-    print("Tokens:", n_tokens)
 
     # Note that NLLLoss returns the **negative** log-likelihood,
     # so the minus sign is dropped in the perplexity calculation
@@ -42,11 +40,11 @@ def evaluate_models(model_names):
         else:
             model = load(model_name, map_location = lambda storage, loc: storage)
 
-        sentences = utils.get_corpus_indices("../data/brown_train.txt", model.word_to_idx)
+        sentences = utils.get_corpus_indices("../data/brown_train.txt", model.word_to_idx, model.context_size)
         train_perp = compute_perplexity(model, sentences)
-        sentences = utils.get_corpus_indices("../data/brown_valid.txt", model.word_to_idx)
+        sentences = utils.get_corpus_indices("../data/brown_valid.txt", model.word_to_idx, model.context_size)
         valid_perp = compute_perplexity(model, sentences)
-        sentences = utils.get_corpus_indices("../data/brown_test.txt", model.word_to_idx)
+        sentences = utils.get_corpus_indices("../data/brown_test.txt", model.word_to_idx, model.context_size)
         test_perp = compute_perplexity(model, sentences)
 
         results += "{:25s}{:^10.0f}{:^10.0f}{:^10.0f}\n".format(model_name, train_perp, valid_perp, test_perp)

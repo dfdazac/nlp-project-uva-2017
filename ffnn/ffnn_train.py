@@ -15,7 +15,7 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
     loss_function = NLLLoss()
     valid_loss_function = NLLLoss(size_average=False)
     optimizer = Adam(model.parameters(), weight_decay=0.0001)
-    batch_size = 32
+    batch_size = 16
     epochs = 25
 
     # Use the settings for the model file name
