@@ -15,7 +15,7 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
     loss_function = NLLLoss()
     valid_loss_function = NLLLoss(size_average=False)
     optimizer = Adam(model.parameters(), weight_decay=0.0001)
-    batch_size = 16
+    batch_size = 8
     epochs = 25
 
     # Use the settings for the model file name
@@ -23,8 +23,8 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
 
     print("Training model with context size {:d}, embedding dimensions {:d} and {:d} hidden layers.".format(
         context_size, emb_dimensions, n_hidden))
-    print("{:6s}  {:^22s}".format("", "Loss"))
-    print("{:6s}  {:^10s}  {:^10s}".format("Epoch", "Train", "Validation"))
+    print("{:6s}  {:^23s}".format("", "Loss"))
+    print("{:6s}  {:^11s}  {:^11s}".format("Epoch", "Train", "Validation"))
 
     # Keep track of the previous loss for early termination
     prev_valid_batch_loss = float("inf")
@@ -62,7 +62,7 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
             terminate_early = True
             print("Terminating due to increase in validation loss:")
         #print("{:2d}/{:2d}:  {:^10.1f}  {:^10.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
-        print("{:2d}/{:2d}:  {:.9f}  {:.9f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
+        print("{:2d}/{:2d}:  {:^11.1f}  {:^11.1f}".format(epoch+1, epochs, batch_train_loss, batch_valid_loss))
 
         if terminate_early:
             break

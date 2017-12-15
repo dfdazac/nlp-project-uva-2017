@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Training and validation corpora
-train_fname = "brown_train.txt.UNK"
-valid_fname = "brown_valid.txt.UNK"
+train_fname = "brown_train.UNK.txt"
+valid_fname = "brown_valid.UNK.txt"
 # The relative path containing the training and validation corpora
 data_path = "../data/"
 # Path to KenLM binaries

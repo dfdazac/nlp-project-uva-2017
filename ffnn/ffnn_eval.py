@@ -47,7 +47,7 @@ def evaluate_models(model_names):
         sentences = utils.get_corpus_indices("../data/brown_test.txt", model.word_to_idx, model.context_size)
         test_perp = compute_perplexity(model, sentences)
 
-        results += "{:25s}{:^10.0f}{:^10.0f}{:^10.0f}\n".format(model_name, train_perp, valid_perp, test_perp)
+        results += "{:25s}{:^10.1f}{:^10.1f}{:^10.1f}\n".format(model_name, train_perp, valid_perp, test_perp)
 
     now = datetime.now()
     with open("ffnn_perplexities_" + datetime.now().strftime('%Y_%m_%d_%H%M') + ".txt", "w") as file:
