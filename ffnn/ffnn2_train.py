@@ -1,7 +1,7 @@
 from torch import save
 from torch.nn import NLLLoss
 from torch.optim import Adam
-from ffnn import FFNeuralModel
+from ffnn2 import FFNeuralModel
 import ffnn_utils as utils
 
 def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
@@ -15,7 +15,7 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
     loss_function = NLLLoss()
     valid_loss_function = NLLLoss(size_average=False)
     optimizer = Adam(model.parameters(), weight_decay=0.0001)
-    batch_size = 1
+    batch_size = 200
     epochs = 25
 
     # Use the settings for the model file name
@@ -74,4 +74,4 @@ if __name__ == '__main__':
     train_fname = "../data/ptb_train.txt"
     valid_fname = "../data/ptb_valid.txt"
 
-    train(train_fname, valid_fname, context_size=4, emb_dimensions=30, n_hidden=100)
+    train(train_fname, valid_fname, context_size=4, emb_dimensions=200, n_hidden=400)
