@@ -14,9 +14,9 @@ def train(train_fname, valid_fname, context_size, emb_dimensions, n_hidden):
         model.cuda()
     loss_function = NLLLoss()
     valid_loss_function = NLLLoss(size_average=False)
-    optimizer = Adam(model.parameters(), weight_decay=0.0001)
-    batch_size = 200
-    epochs = 25
+    optimizer = Adam(model.parameters(), weight_decay=4e-5)
+    batch_size = 32
+    epochs = 30
 
     # Use the settings for the model file name
     model_fname = "{:d}o_{:d}m_{:d}h_ffnn.pt".format(context_size, emb_dimensions, n_hidden)

@@ -19,6 +19,7 @@ class FFNeuralModel(nn.Module):
         self.linear1 = nn.Linear(emb_dimensions * context_size, n_hidden)
         self.linear2 = nn.Linear(n_hidden, n_hidden)
         self.linear3 = nn.Linear(n_hidden, vocab_size)
+        self.drop = nn.Dropout(0.5)
 
         self.word_to_idx = word_to_idx
         self.idx_to_word = {i: word for word, i in word_to_idx.items()}
@@ -33,10 +34,10 @@ class FFNeuralModel(nn.Module):
             - tensor: (N, vocab_size), the log-probabilities
         """
         # Get the embeddings for the inputs and reshape to N rows
-        embeddings = self.embeddings(inputs).view(len(inputs), -1)        
+        embeddings = self.drop(self.embeddings(inputs).view(len(inputs), -1))
         # Forward propagate
         h1 = F.relu(self.linear1(embeddings))
         h2 = F.relu(self.linear2(h1))
-        y = self.linear3(h2)
+        y = self.drop(self.linear3(h2))
         log_probs = F.log_softmax(y)
         return log_probs
